@@ -1,0 +1,16 @@
+{
+  "name": "reach17-nodejs",
+  "version": "1.0.0",
+  "description": "API JSON RESTful per il catalogo corsi di Reach17",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "author": "Paolo Vicaro",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
