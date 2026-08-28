@@ -1,4 +1,5 @@
 const express = require('express')
+const db = require('./db')
 
 const app = express()
 const port = 3000
@@ -6,6 +7,15 @@ const port = 3000
 app.get('/', (req, res) => {
   res.json({ message: 'API del catalogo corsi di Reach17' })
 })
+
+// Controllo all'avvio che il database risponda
+db.query('SELECT 1')
+  .then(() => {
+    console.log('Connessione al database riuscita')
+  })
+  .catch((errore) => {
+    console.log('Errore di connessione al database: ' + errore.message)
+  })
 
 app.listen(port, () => {
   console.log('Server in ascolto sulla porta ' + port)
