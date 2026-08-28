@@ -56,4 +56,61 @@ router.post('/', async (req, res) => {
   res.status(201).json({ id: risultato.insertId, name: nome })
 })
 
+// Modifica di una tipologia esistente
+router.put('/:id', async (req, res) => {
+  const corpo = req.body
+
+  if (!corpo || !corpo.name) {
+    return res.status(400).json({ error: 'Il nome della tipologia è obbligatorio' })
+  }
+
+  const nome = corpo.name
+
+  // Il nome nuovo non deve essere già di un'altra tipologia
+  const [esistenti] = await db.execute(
+    'SELECT id FROM course_types WHERE name = ? AND id != ?',
+    [nome, req.params.id]
+  )
+
+  if (esistenti.length > 0) {
+    return res.status(409).json({ error: 'Esiste già una tipologia con questo nome' })
+  }
+
+  const [risultato] = await db.execute(
+    'UPDATE course_types SET name = ? WHERE id = ?',
+    [nome, req.params.id]
+  )
+
+  if (risultato.affectedRows === 0) {
+    return res.status(404).json({ error: 'Tipologia non trovata' })
+  }
+
+  res.json({ id: Number(req.params.id), name: nome })
+})
+
+// Cancellazione di una tipologia
+router.delete('/:id', async (req, res) => {
+  // Se ci sono corsi di questa tipologia il database rifiuterebbe la
+  // cancellazione, quindi lo controllo prima e rispondo con un messaggio chiaro
+  const [corsi] = await db.execute(
+    'SELECT id FROM courses WHERE course_type_id = ?',
+    [req.params.id]
+  )
+
+  if (corsi.length > 0) {
+    return res.status(409).json({ error: 'Non si può cancellare una tipologia che ha dei corsi' })
+  }
+
+  const [risultato] = await db.execute(
+    'DELETE FROM course_types WHERE id = ?',
+    [req.params.id]
+  )
+
+  if (risultato.affectedRows === 0) {
+    return res.status(404).json({ error: 'Tipologia non trovata' })
+  }
+
+  res.status(204).send()
+})
+
 module.exports = router
