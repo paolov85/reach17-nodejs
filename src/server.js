@@ -5,6 +5,9 @@ const courseTypesRoutes = require('./routes/courseTypes')
 const app = express()
 const port = 3000
 
+// Serve a leggere il corpo JSON delle richieste POST e PUT
+app.use(express.json())
+
 app.get('/', (req, res) => {
   res.json({ message: 'API del catalogo corsi di Reach17' })
 })

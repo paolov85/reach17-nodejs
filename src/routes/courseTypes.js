@@ -25,4 +25,35 @@ router.get('/:id', async (req, res) => {
   res.json(tipologie[0])
 })
 
+// Creazione di una nuova tipologia
+router.post('/', async (req, res) => {
+  // Senza corpo nella richiesta req.body resta undefined, quindi lo controllo
+  // prima di leggerne il campo
+  const corpo = req.body
+
+  if (!corpo || !corpo.name) {
+    return res.status(400).json({ error: 'Il nome della tipologia è obbligatorio' })
+  }
+
+  const nome = corpo.name
+
+  // Il nome deve essere unico: controllo prima di inserire, così posso
+  // rispondere con un messaggio chiaro invece di far fallire la query
+  const [esistenti] = await db.execute(
+    'SELECT id FROM course_types WHERE name = ?',
+    [nome]
+  )
+
+  if (esistenti.length > 0) {
+    return res.status(409).json({ error: 'Esiste già una tipologia con questo nome' })
+  }
+
+  const [risultato] = await db.execute(
+    'INSERT INTO course_types (name) VALUES (?)',
+    [nome]
+  )
+
+  res.status(201).json({ id: risultato.insertId, name: nome })
+})
+
 module.exports = router
