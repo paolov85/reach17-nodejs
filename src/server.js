@@ -1,6 +1,7 @@
 const express = require('express')
 const db = require('./db')
 const courseTypesRoutes = require('./routes/courseTypes')
+const universitiesRoutes = require('./routes/universities')
 
 const app = express()
 const port = 3000
@@ -13,6 +14,7 @@ app.get('/', (req, res) => {
 })
 
 app.use('/course-types', courseTypesRoutes)
+app.use('/universities', universitiesRoutes)
 
 // Controllo all'avvio che il database risponda
 db.query('SELECT 1')
