@@ -90,4 +90,58 @@ router.post('/', async (req, res) => {
   })
 })
 
+// Modifica di un corso esistente
+router.put('/:id', async (req, res) => {
+  const corpo = req.body
+
+  if (!corpo || !corpo.name || !corpo.courseTypeId) {
+    return res.status(400).json({ error: 'Servono il nome del corso e la tipologia' })
+  }
+
+  const nome = corpo.name
+  const tipologiaId = corpo.courseTypeId
+
+  const [tipologie] = await db.execute(
+    'SELECT id, name FROM course_types WHERE id = ?',
+    [tipologiaId]
+  )
+
+  if (tipologie.length === 0) {
+    return res.status(400).json({ error: 'La tipologia indicata non esiste' })
+  }
+
+  const [risultato] = await db.execute(
+    'UPDATE courses SET name = ?, course_type_id = ? WHERE id = ?',
+    [nome, tipologiaId, req.params.id]
+  )
+
+  if (risultato.affectedRows === 0) {
+    return res.status(404).json({ error: 'Corso non trovato' })
+  }
+
+  res.json({
+    id: Number(req.params.id),
+    name: nome,
+    courseType: {
+      id: tipologie[0].id,
+      name: tipologie[0].name
+    }
+  })
+})
+
+// Cancellazione di un corso. Le associazioni con gli atenei spariscono da sole
+// per l'ON DELETE CASCADE nello schema, mentre gli atenei restano
+router.delete('/:id', async (req, res) => {
+  const [risultato] = await db.execute(
+    'DELETE FROM courses WHERE id = ?',
+    [req.params.id]
+  )
+
+  if (risultato.affectedRows === 0) {
+    return res.status(404).json({ error: 'Corso non trovato' })
+  }
+
+  res.status(204).send()
+})
+
 module.exports = router
