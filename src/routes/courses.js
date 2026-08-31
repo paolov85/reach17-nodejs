@@ -53,4 +53,41 @@ router.get('/:id', async (req, res) => {
   })
 })
 
+// Creazione di un nuovo corso
+router.post('/', async (req, res) => {
+  const corpo = req.body
+
+  if (!corpo || !corpo.name || !corpo.courseTypeId) {
+    return res.status(400).json({ error: 'Servono il nome del corso e la tipologia' })
+  }
+
+  const nome = corpo.name
+  const tipologiaId = corpo.courseTypeId
+
+  // La tipologia deve esistere davvero: senza questo controllo l'inserimento
+  // fallirebbe sulla chiave esterna, con un errore poco comprensibile
+  const [tipologie] = await db.execute(
+    'SELECT id, name FROM course_types WHERE id = ?',
+    [tipologiaId]
+  )
+
+  if (tipologie.length === 0) {
+    return res.status(400).json({ error: 'La tipologia indicata non esiste' })
+  }
+
+  const [risultato] = await db.execute(
+    'INSERT INTO courses (name, course_type_id) VALUES (?, ?)',
+    [nome, tipologiaId]
+  )
+
+  res.status(201).json({
+    id: risultato.insertId,
+    name: nome,
+    courseType: {
+      id: tipologie[0].id,
+      name: tipologie[0].name
+    }
+  })
+})
+
 module.exports = router
