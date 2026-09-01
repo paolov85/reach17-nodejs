@@ -144,4 +144,58 @@ router.delete('/:id', async (req, res) => {
   res.status(204).send()
 })
 
+// Associa un ateneo a un corso.
+// La rotta sta sotto /courses/:id perché l'associazione appartiene al corso.
+router.post('/:id/universities', async (req, res) => {
+  const corpo = req.body
+
+  if (!corpo || !corpo.universityId) {
+    return res.status(400).json({ error: "Serve l'id dell'ateneo" })
+  }
+
+  const ateneoId = corpo.universityId
+
+  const [corsi] = await db.execute(
+    'SELECT id FROM courses WHERE id = ?',
+    [req.params.id]
+  )
+
+  if (corsi.length === 0) {
+    return res.status(404).json({ error: 'Corso non trovato' })
+  }
+
+  const [atenei] = await db.execute(
+    'SELECT id, name FROM universities WHERE id = ?',
+    [ateneoId]
+  )
+
+  if (atenei.length === 0) {
+    return res.status(400).json({ error: "L'ateneo indicato non esiste" })
+  }
+
+  // La chiave primaria composta impedisce di inserire due volte la stessa
+  // coppia, ma controllo prima per rispondere con un messaggio chiaro
+  const [esistenti] = await db.execute(
+    'SELECT course_id FROM course_universities WHERE course_id = ? AND university_id = ?',
+    [req.params.id, ateneoId]
+  )
+
+  if (esistenti.length > 0) {
+    return res.status(409).json({ error: 'Il corso è già associato a questo ateneo' })
+  }
+
+  await db.execute(
+    'INSERT INTO course_universities (course_id, university_id) VALUES (?, ?)',
+    [req.params.id, ateneoId]
+  )
+
+  res.status(201).json({
+    courseId: Number(req.params.id),
+    university: {
+      id: atenei[0].id,
+      name: atenei[0].name
+    }
+  })
+})
+
 module.exports = router
