@@ -3,54 +3,98 @@ const db = require('../db')
 
 const router = express.Router()
 
-// Elenco dei corsi, ognuno con la sua tipologia.
-// Nella tabella courses c'è solo course_type_id, quindi serve il JOIN
-// per portarsi dietro anche il nome della tipologia.
+// Elenco dei corsi, ognuno con la sua tipologia e gli atenei in cui si svolge.
+// Il LEFT JOIN serve perché un corso non ancora associato a nessun ateneo
+// deve comparire lo stesso nell'elenco, con la lista vuota.
 router.get('/', async (req, res) => {
   const [righe] = await db.query(`
-    SELECT c.id, c.name, t.id AS course_type_id, t.name AS course_type_name
+    SELECT c.id, c.name,
+           t.id AS course_type_id, t.name AS course_type_name,
+           u.id AS university_id, u.name AS university_name
     FROM courses c
     JOIN course_types t ON t.id = c.course_type_id
-    ORDER BY c.name
+    LEFT JOIN course_universities cu ON cu.course_id = c.id
+    LEFT JOIN universities u ON u.id = cu.university_id
+    ORDER BY c.name, u.name
   `)
 
+  // Il database restituisce una riga per ogni coppia corso-ateneo, quindi lo
+  // stesso corso torna più volte: qui le righe vengono raggruppate per corso
   const corsi = []
 
   for (let i = 0; i < righe.length; i++) {
-    corsi.push({
-      id: righe[i].id,
-      name: righe[i].name,
-      courseType: {
-        id: righe[i].course_type_id,
-        name: righe[i].course_type_name
+    const riga = righe[i]
+    let corso = null
+
+    for (let j = 0; j < corsi.length; j++) {
+      if (corsi[j].id === riga.id) {
+        corso = corsi[j]
       }
-    })
+    }
+
+    if (corso === null) {
+      corso = {
+        id: riga.id,
+        name: riga.name,
+        courseType: {
+          id: riga.course_type_id,
+          name: riga.course_type_name
+        },
+        universities: []
+      }
+      corsi.push(corso)
+    }
+
+    // Con il LEFT JOIN un corso senza atenei ha university_id a null
+    if (riga.university_id !== null) {
+      corso.universities.push({
+        id: riga.university_id,
+        name: riga.university_name
+      })
+    }
   }
 
   res.json(corsi)
 })
 
-// Dettaglio di un singolo corso con la sua tipologia
+// Dettaglio di un singolo corso, con la tipologia e i suoi atenei
 router.get('/:id', async (req, res) => {
   const [righe] = await db.execute(`
-    SELECT c.id, c.name, t.id AS course_type_id, t.name AS course_type_name
+    SELECT c.id, c.name,
+           t.id AS course_type_id, t.name AS course_type_name,
+           u.id AS university_id, u.name AS university_name
     FROM courses c
     JOIN course_types t ON t.id = c.course_type_id
+    LEFT JOIN course_universities cu ON cu.course_id = c.id
+    LEFT JOIN universities u ON u.id = cu.university_id
     WHERE c.id = ?
+    ORDER BY u.name
   `, [req.params.id])
 
   if (righe.length === 0) {
     return res.status(404).json({ error: 'Corso non trovato' })
   }
 
-  res.json({
+  const corso = {
     id: righe[0].id,
     name: righe[0].name,
     courseType: {
       id: righe[0].course_type_id,
       name: righe[0].course_type_name
+    },
+    universities: []
+  }
+
+  for (let i = 0; i < righe.length; i++) {
+    if (righe[i].university_id !== null) {
+      corso.universities.push({
+        id: righe[i].university_id,
+        name: righe[i].university_name
+      })
     }
-  })
+  }
+
+  res.json(corso)
 })
 
 // Creazione di un nuovo corso
