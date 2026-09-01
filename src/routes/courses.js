@@ -198,4 +198,19 @@ router.post('/:id/universities', async (req, res) => {
   })
 })
 
+// Toglie l'associazione tra un corso e un ateneo.
+// Spariscono solo il legame: il corso e l'ateneo restano tutti e due.
+router.delete('/:id/universities/:universityId', async (req, res) => {
+  const [risultato] = await db.execute(
+    'DELETE FROM course_universities WHERE course_id = ? AND university_id = ?',
+    [req.params.id, req.params.universityId]
+  )
+
+  if (risultato.affectedRows === 0) {
+    return res.status(404).json({ error: 'Associazione non trovata' })
+  }
+
+  res.status(204).send()
+})
+
 module.exports = router
