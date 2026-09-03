@@ -1,5 +1,6 @@
 const express = require('express')
 const db = require('../db')
+const { nomeValido } = require('../validation')
 
 const router = express.Router()
 
@@ -31,11 +32,15 @@ router.post('/', async (req, res) => {
   // prima di leggerne il campo
   const corpo = req.body
 
-  if (!corpo || !corpo.name) {
-    return res.status(400).json({ error: 'Il nome della tipologia è obbligatorio' })
+  if (!corpo) {
+    return res.status(400).json({ error: 'Manca il corpo della richiesta' })
   }
 
-  const nome = corpo.name
+  const nome = nomeValido(corpo.name)
+
+  if (nome === null) {
+    return res.status(400).json({ error: 'Il nome della tipologia deve essere un testo da 1 a 100 caratteri' })
+  }
 
   // Il nome deve essere unico: controllo prima di inserire, così posso
   // rispondere con un messaggio chiaro invece di far fallire la query
@@ -60,11 +65,15 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const corpo = req.body
 
-  if (!corpo || !corpo.name) {
-    return res.status(400).json({ error: 'Il nome della tipologia è obbligatorio' })
+  if (!corpo) {
+    return res.status(400).json({ error: 'Manca il corpo della richiesta' })
   }
 
-  const nome = corpo.name
+  const nome = nomeValido(corpo.name)
+
+  if (nome === null) {
+    return res.status(400).json({ error: 'Il nome della tipologia deve essere un testo da 1 a 100 caratteri' })
+  }
 
   // Il nome nuovo non deve essere già di un'altra tipologia
   const [esistenti] = await db.execute(

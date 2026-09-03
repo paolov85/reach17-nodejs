@@ -1,5 +1,6 @@
 const express = require('express')
 const db = require('../db')
+const { nomeValido } = require('../validation')
 
 const router = express.Router()
 
@@ -27,11 +28,15 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const corpo = req.body
 
-  if (!corpo || !corpo.name) {
-    return res.status(400).json({ error: 'Il nome dell\'ateneo è obbligatorio' })
+  if (!corpo) {
+    return res.status(400).json({ error: 'Manca il corpo della richiesta' })
   }
 
-  const nome = corpo.name
+  const nome = nomeValido(corpo.name)
+
+  if (nome === null) {
+    return res.status(400).json({ error: 'Il nome dell\'ateneo deve essere un testo da 1 a 100 caratteri' })
+  }
 
   const [esistenti] = await db.execute(
     'SELECT id FROM universities WHERE name = ?',
@@ -54,11 +59,15 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const corpo = req.body
 
-  if (!corpo || !corpo.name) {
-    return res.status(400).json({ error: 'Il nome dell\'ateneo è obbligatorio' })
+  if (!corpo) {
+    return res.status(400).json({ error: 'Manca il corpo della richiesta' })
   }
 
-  const nome = corpo.name
+  const nome = nomeValido(corpo.name)
+
+  if (nome === null) {
+    return res.status(400).json({ error: 'Il nome dell\'ateneo deve essere un testo da 1 a 100 caratteri' })
+  }
 
   const [esistenti] = await db.execute(
     'SELECT id FROM universities WHERE name = ? AND id != ?',

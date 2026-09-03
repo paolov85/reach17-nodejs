@@ -1,5 +1,6 @@
 const express = require('express')
 const db = require('../db')
+const { nomeValido, idValido } = require('../validation')
 
 const router = express.Router()
 
@@ -126,12 +127,21 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   const corpo = req.body
 
-  if (!corpo || !corpo.name || !corpo.courseTypeId) {
-    return res.status(400).json({ error: 'Servono il nome del corso e la tipologia' })
+  if (!corpo) {
+    return res.status(400).json({ error: 'Manca il corpo della richiesta' })
   }
 
-  const nome = corpo.name
-  const tipologiaId = corpo.courseTypeId
+  const nome = nomeValido(corpo.name)
+
+  if (nome === null) {
+    return res.status(400).json({ error: 'Il nome del corso deve essere un testo da 1 a 100 caratteri' })
+  }
+
+  const tipologiaId = idValido(corpo.courseTypeId)
+
+  if (tipologiaId === null) {
+    return res.status(400).json({ error: 'La tipologia deve essere indicata con un id intero positivo' })
+  }
 
   // La tipologia deve esistere davvero: senza questo controllo l'inserimento
   // fallirebbe sulla chiave esterna, con un errore poco comprensibile
@@ -163,12 +173,21 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const corpo = req.body
 
-  if (!corpo || !corpo.name || !corpo.courseTypeId) {
-    return res.status(400).json({ error: 'Servono il nome del corso e la tipologia' })
+  if (!corpo) {
+    return res.status(400).json({ error: 'Manca il corpo della richiesta' })
   }
 
-  const nome = corpo.name
-  const tipologiaId = corpo.courseTypeId
+  const nome = nomeValido(corpo.name)
+
+  if (nome === null) {
+    return res.status(400).json({ error: 'Il nome del corso deve essere un testo da 1 a 100 caratteri' })
+  }
+
+  const tipologiaId = idValido(corpo.courseTypeId)
+
+  if (tipologiaId === null) {
+    return res.status(400).json({ error: 'La tipologia deve essere indicata con un id intero positivo' })
+  }
 
   const [tipologie] = await db.execute(
     'SELECT id, name FROM course_types WHERE id = ?',
@@ -218,11 +237,15 @@ router.delete('/:id', async (req, res) => {
 router.post('/:id/universities', async (req, res) => {
   const corpo = req.body
 
-  if (!corpo || !corpo.universityId) {
-    return res.status(400).json({ error: "Serve l'id dell'ateneo" })
+  if (!corpo) {
+    return res.status(400).json({ error: 'Manca il corpo della richiesta' })
   }
 
-  const ateneoId = corpo.universityId
+  const ateneoId = idValido(corpo.universityId)
+
+  if (ateneoId === null) {
+    return res.status(400).json({ error: "L'ateneo deve essere indicato con un id intero positivo" })
+  }
 
   const [corsi] = await db.execute(
     'SELECT id FROM courses WHERE id = ?',
